@@ -1,9 +1,9 @@
 (function() {
   let socket,
-    buttonReady,
-    buttonThrow,
-    countdownMain,
-    countdownLocal,
+    bReady,
+    bThrow,
+    cMain,
+    cLocal,
     message,
     score,
     points = {
@@ -14,29 +14,28 @@
     opponentReady = false,
     isBombOwner = false;
 
-  function disableReadyButton() {
-    buttonReady.setAttribute("disabled", "disabled");
-    buttonReady.style.zIndex = "1";
+  function disableRButton() {
+    bReady.setAttribute("disabled", "disabled");
+    bReady.style.zIndex = "1";
   }
 
-  function enableReadyButton() {
-    console.log("Enable button");
-    buttonReady.removeAttribute("disabled");
-    buttonReady.style.zIndex = "2";
+  function enableRButton() {
+    bReady.removeAttribute("disabled");
+    bReady.style.zIndex = "2";
   }
 
-  function disableThrowButton() {
-    buttonThrow.setAttribute("disabled", "disabled");
-    buttonThrow.style.zIndex = "1";
-    countdownMain.classList.remove("owner");
-    countdownLocal.classList.remove("owner");
+  function disableTButton() {
+    bThrow.setAttribute("disabled", "disabled");
+    bThrow.style.zIndex = "1";
+    cMain.classList.remove("owner");
+    cLocal.classList.remove("owner");
   }
 
-  function enableThrowButton() {
-    buttonThrow.removeAttribute("disabled");
-    buttonThrow.style.zIndex = "2";
-    countdownMain.classList.add("owner");
-    countdownLocal.classList.add("owner");
+  function enableTButton() {
+    bThrow.removeAttribute("disabled");
+    bThrow.style.zIndex = "2";
+    cMain.classList.add("owner");
+    cLocal.classList.add("owner");
   }
 
   function setMessage(text) {
@@ -44,20 +43,20 @@
   }
 
   function updateCountdown(time) {
-    countdownMain.innerHTML = time;
+    cMain.innerHTML = time;
   }
 
   function resetCountdown() {
-    countdownMain.innerHTML = "";
+    cMain.innerHTML = "";
     resetLocalCountdown();
   }
 
-  function updateCountdownLocal(time) {
-    countdownLocal.innerHTML = time;
+  function updatecLocal(time) {
+    cLocal.innerHTML = time;
   }
 
   function resetLocalCountdown() {
-    countdownLocal.innerHTML = "";
+    cLocal.innerHTML = "";
   }
 
   function displayScore(text) {
@@ -66,12 +65,12 @@
       "<div>Won: " + points.win + "</div>",
       "<div>Lost: " + points.lose + "</div>"
     ].join("");
-    countdownMain.classList.add("exploded");
+    cMain.classList.add("exploded");
   }
 
   function hideScore() {
     score.innerHTML = "";
-    countdownMain.classList.remove("exploded");
+    cMain.classList.remove("exploded");
   }
 
   function bind() {
@@ -81,7 +80,7 @@
       if (pointsCount === 0) {
         setMessage("Get ready!");
       }
-      enableReadyButton();
+      enableRButton();
     });
 
     socket.on("ready", bombOwner => {
@@ -90,15 +89,15 @@
         isBombOwner = bombOwner;
       }
       setMessage("Waiting for opponent to get ready...");
-      disableReadyButton();
+      disableRButton();
       hideScore();
       updateCountdown(10);
       if (ready && opponentReady) {
         setMessage("");
         if (isBombOwner) {
-          enableThrowButton();
+          enableTButton();
         } else {
-          disableThrowButton();
+          disableTButton();
         }
       }
     });
@@ -106,12 +105,15 @@
     socket.on("opponentReady", () => {
       opponentReady = true;
       hideScore();
+      if (!isBombOwner) {
+        setMessage("Get ready!");
+      }
       if (ready && opponentReady) {
         setMessage("");
         if (isBombOwner) {
-          enableThrowButton();
+          enableTButton();
         } else {
-          disableThrowButton();
+          disableTButton();
         }
       }
     });
@@ -119,11 +121,11 @@
     socket.on("update", bombOwner => {
       isBombOwner = bombOwner;
       if (isBombOwner) {
-        updateCountdownLocal(3);
-        enableThrowButton();
+        updatecLocal(3);
+        enableTButton();
         setMessage("");
       } else {
-        disableThrowButton();
+        disableTButton();
         setMessage("Prepare to catch!");
       }
     });
@@ -136,8 +138,8 @@
       setMessage("");
       resetCountdown();
       displayScore("You win!");
-      enableReadyButton();
-      disableThrowButton();
+      enableRButton();
+      disableTButton();
     });
 
     socket.on("lose", () => {
@@ -148,13 +150,13 @@
       setMessage("");
       resetCountdown();
       displayScore("You lose!");
-      enableReadyButton();
-      disableThrowButton();
+      enableRButton();
+      disableTButton();
     });
 
     socket.on("end", () => {
-      disableThrowButton();
-      disableReadyButton();
+      disableTButton();
+      disableRButton();
       hideScore();
       setMessage("Waiting for opponent...");
     });
@@ -165,28 +167,28 @@
 
     socket.on("tickLocal", time => {
       if (isBombOwner) {
-        updateCountdownLocal(time);
+        updatecLocal(time);
       } else {
         resetLocalCountdown();
       }
     });
 
     socket.on("connect", () => {
-      disableThrowButton();
-      disableReadyButton();
+      disableTButton();
+      disableRButton();
       setMessage("Waiting for opponent...");
     });
 
     socket.on("disconnect", () => {
-      disableThrowButton();
-      disableReadyButton();
+      disableTButton();
+      disableRButton();
       hideScore();
       setMessage("Connection lost!");
     });
 
     socket.on("error", () => {
-      disableThrowButton();
-      disableReadyButton();
+      disableTButton();
+      disableRButton();
       setMessage("Connection error!");
     });
 
@@ -194,21 +196,21 @@
       setMessage("Bomb in the air!");
     });
 
-    buttonThrow.addEventListener("click", function(e) {
+    bThrow.addEventListener("click", function(e) {
       socket.emit("throw");
     });
 
-    buttonReady.addEventListener("click", function(e) {
+    bReady.addEventListener("click", function(e) {
       socket.emit("ready");
     });
   }
 
   function init() {
     socket = io({ upgrade: false, transports: ["websocket"] });
-    countdownMain = document.getElementById("countdownMain");
-    countdownLocal = document.getElementById("countdownLocal");
-    buttonThrow = document.getElementById("buttonThrow");
-    buttonReady = document.getElementById("buttonReady");
+    cMain = document.getElementById("countdownMain");
+    cLocal = document.getElementById("countdownLocal");
+    bThrow = document.getElementById("buttonThrow");
+    bReady = document.getElementById("buttonReady");
     message = document.getElementById("message");
     score = document.getElementById("score");
     bind();
