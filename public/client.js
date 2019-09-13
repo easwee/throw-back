@@ -1,5 +1,3 @@
-"use strict";
-
 (function() {
   let socket,
     buttonReady,
@@ -14,8 +12,7 @@
     },
     ready = false,
     opponentReady = false,
-    isBombOwner = false,
-    firstLoad = true;
+    isBombOwner = false;
 
   function disableReadyButton() {
     buttonReady.setAttribute("disabled", "disabled");
@@ -77,9 +74,6 @@
     countdownMain.classList.remove("exploded");
   }
 
-  /**
-   * Bind Socket.IO and button events
-   */
   function bind() {
     socket.on("start", () => {
       const pointsCount = points.win + points.lose;
@@ -186,6 +180,7 @@
     socket.on("disconnect", () => {
       disableThrowButton();
       disableReadyButton();
+      hideScore();
       setMessage("Connection lost!");
     });
 
@@ -208,9 +203,6 @@
     });
   }
 
-  /**
-   * Client module init
-   */
   function init() {
     socket = io({ upgrade: false, transports: ["websocket"] });
     countdownMain = document.getElementById("countdownMain");
@@ -219,7 +211,6 @@
     buttonReady = document.getElementById("buttonReady");
     message = document.getElementById("message");
     score = document.getElementById("score");
-    //disableButton();
     bind();
   }
 

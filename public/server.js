@@ -1,5 +1,3 @@
-"use strict";
-
 const users = [];
 
 function findOpponent(user) {
@@ -16,64 +14,62 @@ function removeUser(user) {
 
 class Game {
   constructor(user1, user2) {
-    this.user1 = user1;
-    this.user2 = user2;
-    this.bombOwner = null;
-    this.roundTime = 10;
-    this.throwTime = 3;
+    this.u1 = user1;
+    this.u2 = user2;
+    this.owner = null;
+    this.rTime = 10;
+    this.tTime = 3;
     this.playing = false;
   }
 
   start() {
-    console.log("Starting");
-    this.user1.start(this, this.user2);
-    this.user2.start(this, this.user1);
+    this.u1.start(this, this.u2);
+    this.u2.start(this, this.u1);
   }
 
   ready(id) {
-    // first thrower is first to join
-    if (!this.bombOwner) {
-      this.bombOwner = id;
+    if (!this.owner) {
+      this.owner = id;
     }
-    if (this.user1.id === id) {
-      this.user1.ready(this.user2, this.bombOwner === this.user1.id);
+    if (this.u1.id === id) {
+      this.u1.ready(this.u2, this.owner === this.u1.id);
     }
-    if (this.user2.id === id) {
-      this.user2.ready(this.user1, this.bombOwner === this.user2.id);
+    if (this.u2.id === id) {
+      this.u2.ready(this.u1, this.owner === this.u2.id);
     }
 
-    if (this.user1.isReady && this.user2.isReady) {
+    if (this.u1.isReady && this.u2.isReady) {
       this.startMainCountdown();
       this.startLocalCountdown();
     }
   }
 
   ended() {
-    return this.user1.dead || this.user2.dead;
+    return this.u1.dead || this.u2.dead;
   }
 
   setBombOwner() {
     clearInterval(this.countdownLocal);
-    if (this.bombOwner === this.user1.id) {
-      this.bombOwner = this.user2.id;
-      this.user1.tick("");
+    if (this.owner === this.u1.id) {
+      this.owner = this.u2.id;
+      this.u1.tick("");
     } else {
-      this.bombOwner = this.user1.id;
-      this.user2.tick("");
+      this.owner = this.u1.id;
+      this.u2.tick("");
     }
-    this.user1.update(this.bombOwner === this.user1.id);
-    this.user2.update(this.bombOwner === this.user2.id);
-    this.throwTime = 3;
+    this.u1.update(this.owner === this.u1.id);
+    this.u2.update(this.owner === this.u2.id);
+    this.tTime = 3;
     this.startLocalCountdown();
   }
 
   startMainCountdown() {
     this.playing = true;
     this.countdown = setInterval(() => {
-      this.user1.tick(this.roundTime);
-      this.user2.tick(this.roundTime);
-      this.roundTime--;
-      if (this.roundTime < 0) {
+      this.u1.tick(this.rTime);
+      this.u2.tick(this.rTime);
+      this.rTime--;
+      if (this.rTime < 0) {
         if (this.playing) {
           clearInterval(this.countdownLocal);
           clearInterval(this.countdown);
@@ -90,11 +86,11 @@ class Game {
 
   startLocalCountdown() {
     this.countdownLocal = setInterval(() => {
-      this.user1.tickLocal(this.throwTime);
-      this.user2.tickLocal(this.throwTime);
+      this.u1.tickLocal(this.tTime);
+      this.u2.tickLocal(this.tTime);
 
-      this.throwTime--;
-      if (this.throwTime < 0) {
+      this.tTime--;
+      if (this.tTime < 0) {
         if (this.playing) {
           clearInterval(this.countdownLocal);
           clearInterval(this.countdown);
@@ -110,16 +106,16 @@ class Game {
   }
 
   roundOver() {
-    if (this.bombOwner === this.user2.id) {
-      this.user1.win();
-      this.user2.lose();
+    if (this.owner === this.u2.id) {
+      this.u1.win();
+      this.u2.lose();
     } else {
-      this.user1.lose();
-      this.user2.win();
+      this.u1.lose();
+      this.u2.win();
     }
-    this.bombOwner = null;
-    this.roundTime = 10;
-    this.throwTime = 3;
+    this.owner = null;
+    this.rTime = 10;
+    this.tTime = 3;
   }
 }
 
@@ -177,33 +173,20 @@ module.exports = {
   io: socket => {
     const user = new User(socket);
     user.id = socket.id;
-
     users.push(user);
     findOpponent(user);
-
     socket.on("disconnect", () => {
-      console.log("Disconnected: " + socket.id);
       removeUser(user);
       if (user.opponent) {
         user.opponent.end();
         findOpponent(user.opponent);
       }
     });
-
     socket.on("throw", () => {
       user.game.setBombOwner();
     });
-
     socket.on("ready", () => {
       user.game.ready(user.id);
-    });
-
-    console.log("Connected: " + socket.id);
-  },
-
-  stat: (req, res) => {
-    storage.get("games", 0).then(games => {
-      res.send(`<h1>Games played: ${games}</h1>`);
     });
   }
 };
