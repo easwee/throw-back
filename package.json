@@ -29,6 +29,6 @@
     "sqlite3": "^4.0.9"
   },
   "devDependencies": {
-    "mocha": "^6.1.4"
+    "mocha": "^6.2.3"
   }
 }
